@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NGINX Control Panel — Login</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #0d0f0e;
+    --bg2:     #131715;
+    --border:  #252b27;
+    --border2: #2e3630;
+    --text:    #c8d4cc;
+    --text2:   #7a8f82;
+    --text3:   #4a5e52;
+    --green:   #3ddc84;
+    --red:     #ff5f5f;
+    --red-bg:  rgba(255,95,95,0.06);
+    --mono:    'IBM Plex Mono', monospace;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  .box {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    width: 100%;
+    max-width: 360px;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-mark {
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo-mark::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: var(--green);
+  }
+
+  .logo-text {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+
+  .logo-text span { color: var(--green); }
+
+  .form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .form-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text2);
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 9px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.12s;
+  }
+
+  .form-input:focus { border-color: var(--green); }
+  .form-input::placeholder { color: var(--text3); }
+
+  .btn {
+    width: 100%;
+    padding: 10px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: 1px solid var(--green);
+    background: transparent;
+    color: var(--green);
+    transition: all 0.15s;
+  }
+
+  .btn:hover { background: var(--green); color: var(--bg); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .error {
+    font-size: 11px;
+    color: var(--red);
+    background: var(--red-bg);
+    border: 1px solid rgba(255,95,95,0.3);
+    padding: 8px 12px;
+    display: none;
+  }
+
+  .error.visible { display: block; }
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="logo">
+    <div class="logo-mark"></div>
+    <div class="logo-text">nginx<span>/ctl</span></div>
+  </div>
+  <form class="form" onsubmit="login(event)">
+    <div class="form-group">
+      <label class="form-label">Username</label>
+      <input class="form-input" id="username" type="text" autocomplete="username" autofocus>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input class="form-input" id="password" type="password" autocomplete="current-password">
+    </div>
+    <div class="error" id="error-msg"></div>
+    <button class="btn" id="submit-btn" type="submit">Sign in</button>
+  </form>
+</div>
+<script>
+async function login(e) {
+  e.preventDefault();
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  const btn = document.getElementById('submit-btn');
+  const err = document.getElementById('error-msg');
+
+  err.classList.remove('visible');
+  btn.disabled = true;
+  btn.textContent = '...';
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    if (res.ok) {
+      window.location.href = '/';
+    } else {
+      const data = await res.json();
+      err.textContent = data.error || 'Login failed';
+      err.classList.add('visible');
+    }
+  } catch {
+    err.textContent = 'Network error';
+    err.classList.add('visible');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Sign in';
+  }
+}
+</script>
+</body>
+</html>

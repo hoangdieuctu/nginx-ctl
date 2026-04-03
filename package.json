@@ -1,6 +1,6 @@
 {
   "name": "nginx-tool",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Nginx config manager",
   "main": "server.js",
   "scripts": {
@@ -8,6 +8,7 @@
     "dev": "node --watch server.js"
   },
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "express-session": "^1.19.0"
   }
 }

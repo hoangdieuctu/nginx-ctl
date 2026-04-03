@@ -1,13 +1,68 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const session = require('express-session');
 
 const app = express();
 const PORT = process.env.PORT || 3737;
 const SETTINGS_FILE = path.join(__dirname, 'settings.json');
+const { version } = require('./package.json');
+
+const AUTH_USERNAME = process.env.AUTH_USERNAME;
+const AUTH_PASSWORD = process.env.AUTH_PASSWORD;
+const authEnabled = !!(AUTH_USERNAME && AUTH_PASSWORD);
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'nginx-ctl-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { httpOnly: true, maxAge: 8 * 60 * 60 * 1000 }, // 8h
+}));
+
+// ── Auth middleware ───────────────────────────────────────────────────────────
+
+function requireAuth(req, res, next) {
+  if (!authEnabled) return next();
+  if (req.session.authenticated) return next();
+  if (req.path.startsWith('/api/')) return res.status(401).json({ error: 'Unauthorized' });
+  res.redirect('/login');
+}
+
+app.get('/login', (req, res) => {
+  if (!authEnabled || req.session.authenticated) return res.redirect('/');
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+app.post('/api/auth/login', (req, res) => {
+  const { username, password } = req.body;
+  if (!authEnabled) return res.json({ ok: true });
+  if (username === AUTH_USERNAME && password === AUTH_PASSWORD) {
+    req.session.authenticated = true;
+    res.json({ ok: true });
+  } else {
+    res.status(401).json({ error: 'Invalid credentials' });
+  }
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  req.session.destroy(() => res.json({ ok: true }));
+});
+
+app.get('/api/auth/status', (req, res) => {
+  res.json({ authEnabled });
+});
+
+app.use(express.static(path.join(__dirname, 'public'), {
+  index: false, // don't serve index.html automatically
+}));
+
+// Protect index.html and all API routes
+app.use(requireAuth);
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // ── Settings ──────────────────────────────────────────────────────────────────
 
@@ -21,6 +76,10 @@ function loadSettings() {
 function confDir() {
   return loadSettings().confDir;
 }
+
+app.get('/api/version', (req, res) => {
+  res.json({ version });
+});
 
 app.get('/api/settings', (req, res) => {
   res.json(loadSettings());

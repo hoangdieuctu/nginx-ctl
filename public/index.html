@@ -781,6 +781,7 @@
   <div class="logo">
     <div class="logo-mark"></div>
     <div class="logo-text">nginx<span>/ctl</span></div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--text3)" id="app-version"></div>
   </div>
   <div class="header-meta">
     <div class="stat-pill">
@@ -794,6 +795,7 @@
       + New Site
     </button>
     <button class="btn btn-ghost" onclick="openSettings()" title="Settings" style="padding:7px 10px">⚙</button>
+    <button class="btn btn-ghost" id="logout-btn" onclick="logout()" style="display:none">Logout</button>
   </div>
 </header>
 
@@ -1370,6 +1372,19 @@ document.addEventListener('keydown', e => {
 });
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
+
+api('GET', '/api/version').then(d => {
+  document.getElementById('app-version').textContent = 'v' + d.version;
+}).catch(() => {});
+
+api('GET', '/api/auth/status').then(d => {
+  if (d.authEnabled) document.getElementById('logout-btn').style.display = '';
+}).catch(() => {});
+
+async function logout() {
+  await fetch('/api/auth/logout', { method: 'POST' });
+  window.location.href = '/login';
+}
 
 loadSites();
 </script>
