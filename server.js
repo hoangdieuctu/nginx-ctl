@@ -2,6 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const session = require('express-session');
+const archiver = require('archiver');
 
 const app = express();
 const PORT = process.env.PORT || 3737;
@@ -325,6 +326,32 @@ app.post('/api/sites/:name/toggle', (req, res) => {
       : filename + '.disabled';
     fs.renameSync(path.join(confDir(), filename), path.join(confDir(), newFilename));
     res.json(readSite(newFilename));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Export all active + disabled configs as a ZIP
+app.get('/api/export/zip', (req, res) => {
+  try {
+    const files = getActiveFiles();
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const zipName = `${dateStr}-nginx-config.zip`;
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${zipName}"`);
+
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    archive.on('error', err => { throw err; });
+    archive.pipe(res);
+
+    for (const filename of files) {
+      const filepath = path.join(confDir(), filename);
+      archive.file(filepath, { name: filename });
+    }
+
+    archive.finalize();
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

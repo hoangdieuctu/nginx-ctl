@@ -1,0 +1,25 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./conf.d:/etc/nginx/conf.d
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+
+  nginx-tool:
+    image: hoangdieuctu/nginxctl-pub:1.0.2
+    container_name: nginx-tool
+    ports:
+      - "3737:3737"
+    environment:
+      - AUTH_USERNAME=admin
+      - AUTH_PASSWORD=admin
+      - SESSION_SECRET=changeme
+    volumes:
+      - ./conf.d:/app/conf.d
+      - ./settings.json:/app/settings.json
+    depends_on:
+      - nginx

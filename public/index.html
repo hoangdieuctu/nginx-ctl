@@ -794,6 +794,7 @@
     <button class="btn btn-primary" onclick="openNewRaw()">
       + New Site
     </button>
+    <button class="btn btn-ghost" onclick="exportZip()" title="Export all configs as ZIP" style="padding:7px 10px">⬇ Export</button>
     <button class="btn btn-ghost" onclick="openSettings()" title="Settings" style="padding:7px 10px">⚙</button>
     <button class="btn btn-ghost" id="logout-btn" onclick="logout()" style="display:none">Logout</button>
   </div>
@@ -1314,6 +1315,12 @@ function showToast(msg, type = 'success') {
   el.textContent = (type === 'success' ? '✓ ' : '✕ ') + msg;
   document.getElementById('toasts').appendChild(el);
   setTimeout(() => el.remove(), 3500);
+}
+
+// ── Export ────────────────────────────────────────────────────────────────────
+
+function exportZip() {
+  window.location.href = '/api/export/zip';
 }
 
 // ── Settings ──────────────────────────────────────────────────────────────────
